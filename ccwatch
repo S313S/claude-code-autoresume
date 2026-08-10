@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+# claude-code-autoresume -- control script
+set -euo pipefail
+
+# Resolve our own directory, following the symlink that install.sh drops in PATH.
+SELF="${BASH_SOURCE[0]}"
+while [ -L "$SELF" ]; do
+  TARGET="$(readlink "$SELF")"
+  case "$TARGET" in
+    /*) SELF="$TARGET" ;;
+    *)  SELF="$(dirname "$SELF")/$TARGET" ;;
+  esac
+done
+CODE_DIR="$(cd "$(dirname "$SELF")" && pwd)"
+
+# Runtime state lives outside the checkout so `git pull` never fights with logs.
+BASE="${CC_AUTORESUME_HOME:-$HOME/.claude/cc-autoresume}"
+mkdir -p "$BASE"
+
+PY="$(command -v python3 || echo /usr/bin/python3)"
+SETTINGS="$HOME/.claude/settings.json"
+LOG="$BASE/watchdog.log"
+CFG="$BASE/config.json"
+PAUSE="$BASE/PAUSED"
+PIDFILE="$BASE/watchdog.pid"
+
+usage() {
+  cat <<'EOF'
+Usage: ccwatch <command>
+
+  check       Scan every terminal and report; never injects. Safe anytime.
+  once        Scan once and inject if a session qualifies.
+  start       Start the watchdog in the background.
+  stop        Stop it.
+  restart     Stop, then start.
+  status      Daemon state and current config.
+  log [n]     Tail the log (default 40 lines).
+  hook        Is the StopFailure hook registered? Any pending tickets?
+  pause       Stop injecting; keep the daemon running.
+  resume      Undo pause.
+  dry on|off  Toggle dry-run (log what it would do, inject nothing).
+  config      Open the config file in $EDITOR.
+
+macOS note: run `start` from a real Terminal/iTerm window. Driving a terminal
+needs AppleScript automation rights, which are granted to the *responsible*
+app; a process spawned by launchd has no such identity and its AppleEvents
+hang. tmux-only setups are unaffected.
+EOF
+}
+
+cmd="${1:-}"
+case "$cmd" in
+  check)   exec "$PY" "$CODE_DIR/watchdog.py" --check ;;
+  once)    exec "$PY" "$CODE_DIR/watchdog.py" --once ;;
+
+  start)
+    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+      echo "Already running (pid $(cat "$PIDFILE")). Use: ccwatch restart"; exit 0
+    fi
+    nohup "$PY" "$CODE_DIR/watchdog.py" >> "$BASE/daemon.out.log" 2>&1 &
+    echo $! > "$PIDFILE"
+    disown 2>/dev/null || true
+    sleep 1
+    if kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+      echo "Started (pid $(cat "$PIDFILE")). Logs: ccwatch log"
+    else
+      echo "Failed to start; see $BASE/daemon.out.log"; exit 1
+    fi
+    ;;
+
+  stop)
+    if [ -f "$PIDFILE" ]; then kill "$(cat "$PIDFILE")" 2>/dev/null || true; rm -f "$PIDFILE"; fi
+    pkill -f "$CODE_DIR/watchdog.py" 2>/dev/null || true
+    echo "Stopped."
+    ;;
+
+  restart) "$0" stop; sleep 1; "$0" start ;;
+
+  status)
+    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+      echo "Daemon:    running (pid $(cat "$PIDFILE"))"
+    elif pgrep -f "$CODE_DIR/watchdog.py" >/dev/null 2>&1; then
+      echo "Daemon:    running (pid $(pgrep -f "$CODE_DIR/watchdog.py" | head -1))"
+    else
+      echo "Daemon:    not running"
+    fi
+    [ -f "$PAUSE" ] && echo "Injection: PAUSED" || echo "Injection: enabled"
+    echo "Code:      $CODE_DIR"
+    echo "State:     $BASE"
+    echo "--- config ---"; cat "$CFG" 2>/dev/null || echo "(created on first run)"
+    ;;
+
+  hook)
+    "$PY" - "$SETTINGS" "$BASE" "$CODE_DIR" <<'PYEOF'
+import json, os, sys, time
+settings, base, code = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    cfg = json.load(open(settings, encoding="utf-8"))
+except Exception as e:
+    cfg = {}
+    print("Could not read settings.json: %s" % e)
+found = [h.get("command") for e in cfg.get("hooks", {}).get("StopFailure", [])
+         for h in (e.get("hooks") or []) if "hook_stopfailure.py" in (h.get("command") or "")]
+print("StopFailure hook: %s" % ("registered" if found else "NOT registered"))
+for c in found:
+    print("  %s" % c)
+if not found:
+    print("  install it with:  %s/install.sh --hook" % code)
+d = os.path.join(base, "triggers")
+files = sorted(f for f in os.listdir(d)) if os.path.isdir(d) else []
+files = [f for f in files if f.endswith(".json")]
+print("Pending tickets: %d" % len(files))
+for f in files:
+    try:
+        r = json.load(open(os.path.join(d, f), encoding="utf-8"))
+        print("  %s  %.0fs ago  %s" % (r.get("tty"),
+                                       time.time() - float(r.get("ts") or 0),
+                                       (r.get("error") or "")[:50]))
+    except Exception:
+        print("  %s (unreadable)" % f)
+PYEOF
+    ;;
+
+  log)     tail -n "${2:-40}" "$LOG" 2>/dev/null || echo "(no log yet)" ;;
+  pause)   touch "$PAUSE"; echo "Injection paused." ;;
+  resume)  rm -f "$PAUSE"; echo "Injection resumed." ;;
+
+  dry)
+    v="${2:-}"
+    [ "$v" = "on" ] || [ "$v" = "off" ] || { echo "Usage: ccwatch dry on|off"; exit 1; }
+    [ "$v" = "on" ] && b=true || b=false
+    "$PY" - "$CFG" "$b" <<'PYEOF'
+import json, sys
+p, b = sys.argv[1], sys.argv[2] == "true"
+try:
+    c = json.load(open(p, encoding="utf-8"))
+except Exception:
+    c = {}
+c["dry_run"] = b
+json.dump(c, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+print("dry_run =", b)
+PYEOF
+    ;;
+
+  config)  "${EDITOR:-open}" "$CFG" ;;
+  ""|-h|--help|help) usage ;;
+  *) echo "Unknown command: $cmd"; echo; usage; exit 1 ;;
+esac

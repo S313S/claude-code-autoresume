@@ -1,0 +1,14 @@
+# Runtime state normally lives in ~/.claude/cc-autoresume/. These root-anchored
+# rules only guard against CC_AUTORESUME_HOME pointing back into the checkout --
+# they must not swallow examples/config.json.
+/config.json
+/state.json
+/watchdog.pid
+/watchdog.log
+/daemon.out.log
+/triggers/
+/PAUSED
+
+__pycache__/
+*.pyc
+.DS_Store

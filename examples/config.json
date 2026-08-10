@@ -1,0 +1,18 @@
+{
+  "retry_text": "please, retry",
+  "poll_interval_sec": 5,
+  "confirm_polls": 2,
+  "cooldown_sec": 30,
+  "max_consecutive": 6,
+  "dry_run": false,
+  "notify": true,
+  "watch_terminal_app": true,
+  "watch_iterm": true,
+  "watch_tmux": true,
+  "exclude_title_regex": "",
+  "exclude_tty": [],
+  "tail_lines": 80,
+  "use_hook_triggers": true,
+  "trigger_ttl_sec": 180,
+  "fast_poll_sec": 1
+}

@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 /path/to/claude-code-autoresume/hook_stopfailure.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
