@@ -49,8 +49,8 @@ Claude Code 的响应流被中途掐断时，会直接停死：
 ## 安装
 
 ```bash
-git clone https://github.com/S313S/claude-code-autoresume.git
-cd claude-code-autoresume
+git clone https://github.com/S313S/cc-retry-watchdog.git
+cd cc-retry-watchdog
 ./install.sh --hook     # 不加 --hook 就只打印配置片段，不动 settings.json
 ```
 

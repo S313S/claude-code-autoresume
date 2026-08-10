@@ -57,8 +57,8 @@ aborting it. Tuning those timeouts is not the fix.
 ## Install
 
 ```bash
-git clone https://github.com/S313S/claude-code-autoresume.git
-cd claude-code-autoresume
+git clone https://github.com/S313S/cc-retry-watchdog.git
+cd cc-retry-watchdog
 ./install.sh --hook     # omit --hook to print the snippet instead of editing settings.json
 ```
 

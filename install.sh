@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# claude-code-autoresume installer
+# cc-retry-watchdog installer
 #
 #   ./install.sh          link ccwatch into PATH and print the hook snippet
 #   ./install.sh --hook   also merge the StopFailure hook into ~/.claude/settings.json

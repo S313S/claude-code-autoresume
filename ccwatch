@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# claude-code-autoresume -- control script
+# cc-retry-watchdog -- control script
 set -euo pipefail
 
 # Resolve our own directory, following the symlink that install.sh drops in PATH.

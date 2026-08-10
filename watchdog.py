@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-claude-code-autoresume -- watch running Claude Code sessions and, when one is
+cc-retry-watchdog -- watch running Claude Code sessions and, when one is
 killed by a mid-stream connection drop, type the retry prompt into it for you.
 
 Claude Code retries failures that happen *before* a response starts streaming.
