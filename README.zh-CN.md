@@ -1,4 +1,4 @@
-# claude-code-autoresume
+# cc-retry-watchdog
 
 Claude Code 的响应流被中途掐断时，会直接停死：
 
