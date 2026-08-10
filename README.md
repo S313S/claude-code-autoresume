@@ -1,4 +1,4 @@
-# claude-code-autoresume
+# cc-retry-watchdog
 
 Claude Code stops dead when a response stream is cut mid-flight:
 
