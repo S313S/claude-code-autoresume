@@ -31,6 +31,9 @@ Usage: ccwatch <command>
   check       Scan every terminal and report; never injects. Safe anytime.
   once        Scan once and inject if a session qualifies.
   start       Start the watchdog in the background.
+  autostart   Same, but silent and a no-op if already running. Put this in your
+              shell rc so the first terminal you open after login starts it:
+                  [[ -o interactive ]] && command -v ccwatch >/dev/null && ccwatch autostart
   stop        Stop it.
   restart     Stop, then start.
   status      Daemon state and current config.
@@ -66,6 +69,24 @@ case "$cmd" in
     else
       echo "Failed to start; see $BASE/daemon.out.log"; exit 1
     fi
+    ;;
+
+  autostart)
+    # For a shell rc file: silent, instant, safe to run on every new terminal.
+    #
+    # The tty check is the point of this command. On macOS the watchdog can only
+    # drive terminals if it inherits the automation rights of the app that
+    # spawned it, so it has to come from a real terminal window. A shell with no
+    # controlling tty is something else -- a sandboxed tool shell, a CI step, a
+    # hook -- and a watchdog started there would sit timing out on every
+    # AppleEvent while holding the pidfile a healthy one needs.
+    [ -t 0 ] || [ -t 1 ] || exit 0
+    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then exit 0; fi
+    pgrep -f "$CODE_DIR/watchdog.py" >/dev/null 2>&1 && exit 0
+    nohup "$PY" "$CODE_DIR/watchdog.py" >> "$BASE/daemon.out.log" 2>&1 &
+    echo $! > "$PIDFILE"
+    disown 2>/dev/null || true
+    exit 0
     ;;
 
   stop)

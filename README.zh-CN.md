@@ -79,8 +79,22 @@ ccwatch hook      # 钩子注册了吗？有没有待处理工单
 非 macOS 只能走 tmux：总得有办法读到终端屏幕并往里敲字，tmux 是唯一可移植的那个。
 
 **macOS 上必须从真实终端窗口里启动。** 驱动 Terminal/iTerm 需要 AppleScript 自动化权限，
-这个权限跟着「负责进程」走；launchd 拉起的进程没有这个身份，AppleEvent 会一直卡死。
-重启电脑后重新敲一次 `ccwatch start`。纯 tmux 环境没这个问题。
+这个权限跟着「负责进程」走；launchd 拉起的进程没有这个身份，AppleEvent 会一直卡死——
+所以这里**故意没有**提供 LaunchAgent。纯 tmux 环境没这个问题。
+
+### 让它自动启动
+
+既然必须从终端窗口来，那就让你开的第一个终端窗口来做。加进 `~/.zshrc`（或 `~/.bashrc`）：
+
+```bash
+[[ -o interactive ]] && command -v ccwatch >/dev/null 2>&1 && ccwatch autostart
+```
+
+`autostart` 是静默的，守护已在跑时零开销直接返回，并且**拒绝从没有控制终端的 shell 启动**
+——沙箱里的工具 shell、CI 步骤、钩子进程都会被挡住。这条守卫很关键：
+没有终端父进程的守护会在每次 AppleEvent 上卡到超时，同时还占着健康实例需要的 pidfile。
+
+守护能扛住"关掉启动它的那个窗口"，但扛不住注销和重启——上面这行正是补这个缺口。
 
 ---
 

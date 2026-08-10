@@ -91,8 +91,26 @@ screen and type into it, and tmux is the portable one.
 
 **macOS: start it from a real terminal window.** Driving Terminal/iTerm needs
 AppleScript automation rights, which are granted to the *responsible* app. A
-process spawned by launchd has no such identity and its AppleEvents hang forever.
-Re-run `ccwatch start` after a reboot. tmux-only setups are unaffected.
+process spawned by launchd has no such identity and its AppleEvents hang forever,
+so there is no LaunchAgent here on purpose. tmux-only setups are unaffected.
+
+### Starting it automatically
+
+Since it has to come from a terminal window anyway, let the first terminal you
+open do it. Add to `~/.zshrc` (or `~/.bashrc`):
+
+```bash
+[[ -o interactive ]] && command -v ccwatch >/dev/null 2>&1 && ccwatch autostart
+```
+
+`autostart` is silent, costs nothing when the watchdog is already up, and
+refuses to run from a shell with no controlling tty — a sandboxed tool shell, a
+CI step, a hook. That guard matters: a watchdog started without a terminal
+parent would sit there timing out on every AppleEvent while holding the pidfile
+a healthy one needs.
+
+The daemon survives closing the window that started it. It does not survive a
+logout or reboot, which is exactly what the rc line covers.
 
 ---
 
