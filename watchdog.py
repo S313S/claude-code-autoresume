@@ -256,19 +256,33 @@ def parse_sessions(raw, app):
 _empty_warned = set()
 
 
+def window_count(app):
+    out, err = osa('tell application "%s" to return (count of windows) as string' % app,
+                   timeout=15)
+    if err or not out:
+        return -1
+    try:
+        return int(out.strip())
+    except ValueError:
+        return -1
+
+
 def _read_app(app, script, out):
     raw, err = osa(script, timeout=25)
     if err:
         log("WARN could not read %s: %s" % (app, err))
         return
     got = parse_sessions(raw, app)
-    # AppleScript `try` swallows errors, so "app is running but zero sessions
-    # were read" is a bug signal that must be surfaced.
-    if not got and app not in _empty_warned:
-        _empty_warned.add(app)
-        log("WARN %s is running but 0 sessions were read -- the script may be "
-            "failing silently (raw output %d bytes)" % (app, len(raw or "")))
-    elif got:
+    # AppleScript `try` swallows errors, so "the app has windows but we parsed no
+    # sessions out of them" is a bug signal worth surfacing. An app sitting there
+    # with no windows open is not -- checking the count first keeps this from
+    # crying wolf.
+    if not got:
+        if window_count(app) > 0 and app not in _empty_warned:
+            _empty_warned.add(app)
+            log("WARN %s has open windows but 0 sessions were read -- the script "
+                "may be failing silently (raw output %d bytes)" % (app, len(raw or "")))
+    else:
         _empty_warned.discard(app)
     out += got
 
