@@ -22,7 +22,7 @@ WITH_HOOK=0
 for arg in "$@"; do
   case "$arg" in
     --hook) WITH_HOOK=1 ;;
-    -h|--help) sed -n '2,7p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,6p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $arg"; exit 1 ;;
   esac
 done
