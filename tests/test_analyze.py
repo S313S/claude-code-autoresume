@@ -43,7 +43,7 @@ case("parked: only a duration line after the error", True, u"""\
 {status}""".format(box=BOX, status=STATUS))
 
 case("parked: 'Jump to bottom' overlay after the error", True, u"""\
-❯ please, retry
+❯ please, continue
 
 ● API Error: Connection closed mid-response. The response
   above may be incomplete.
@@ -57,7 +57,7 @@ case("parked: 'Jump to bottom' overlay after the error", True, u"""\
 case("parked: a previous manual retry is visible above", True, u"""\
 * Worked for 3m 31s
 
-❯ please, retry
+❯ please, continue
 
 ● API Error: Connection closed mid-response. The response above may be incomplete.
 
@@ -127,7 +127,7 @@ case("built-in retry counting down after the drop", False, u"""\
 case("already recovered and kept writing", False, u"""\
 ● API Error: Connection closed mid-response. The response above may be incomplete.
 
-❯ please, retry
+❯ please, continue
 
 ⏺ Right, continuing from where it cut off. Schema is in docs/design/.
 

@@ -1,5 +1,5 @@
 {
-  "retry_text": "please, retry",
+  "retry_text": "please, continue",
   "poll_interval_sec": 5,
   "confirm_polls": 2,
   "cooldown_sec": 30,

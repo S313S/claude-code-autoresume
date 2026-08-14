@@ -152,11 +152,13 @@ python3 tests/test_analyze.py
 
 ## Caveat worth understanding
 
-The retry prompt makes the model **redo the turn**. Because the partial response
-stays in the transcript, it usually continues rather than starting over — but if
-the drop happened after an `Edit` or `Bash` call, re-running the turn can repeat
-that side effect. This is inherent to retrying by re-prompting, not something
-this tool adds; automating it just makes it happen more often. Set
+Typing anything into a dead turn starts **a new turn**. The default text is
+`please, continue` — worded that way on purpose, since `please, retry` reads as
+"start over" — and because the partial response stays in the transcript, the
+model usually picks up where it was cut off. But it is still a fresh turn: if the
+drop happened after an `Edit` or `Bash` call, the model may repeat that side
+effect. This is inherent to recovering by re-prompting, not something this tool
+adds; automating it just makes it happen more often. Set
 `max_consecutive` low if that worries you, or run with `dry_run` first.
 
 ---
@@ -167,7 +169,7 @@ this tool adds; automating it just makes it happen more often. Set
 
 | Key | Default | Meaning |
 |---|---|---|
-| `retry_text` | `please, retry` | what gets typed |
+| `retry_text` | `please, continue` | what gets typed |
 | `poll_interval_sec` | `5` | polling cadence |
 | `confirm_polls` | `2` | consecutive stuck observations before acting (polling path only) |
 | `cooldown_sec` | `30` | minimum gap between injections into one session |

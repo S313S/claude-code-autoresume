@@ -58,7 +58,7 @@ TRIG_DIR = os.path.join(BASE, "triggers")       # tickets dropped by the hook
 LOG_MAX_BYTES = 2 * 1024 * 1024
 
 DEFAULTS = {
-    "retry_text": "please, retry",
+    "retry_text": "please, continue",
     "poll_interval_sec": 5,
     "confirm_polls": 2,          # consecutive stuck observations before acting
     "cooldown_sec": 30,          # min seconds between two injections per session
